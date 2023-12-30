@@ -14,18 +14,19 @@ module Data.OctTree
   , mkRegionByPow
   , query
   , fuse
-  , overlay
+  -- , overlay
   , volumize
   , Raw.corners
   ) where
 
-import           Data.Coerce (coerce)
+-- import           Data.Coerce (coerce)
+-- import           Data.Semigroup (Last(..))
 import           Data.Foldable
 import           Data.Maybe (fromMaybe)
 import           Data.Monoid (Ap(..))
-import           Data.OctTree.Internal (Oct(..), Tree(..), Cube(..), pattern Oct, unwrap, intersects, containsCube, getIntersect, containsPoint, normalize, sizeof)
+import           Data.OctTree.Internal (Oct(..), Cube(..), pattern Oct, unwrap, intersects, containsCube, getIntersect, containsPoint, normalize, sizeof)
 import qualified Data.OctTree.Internal as Raw
-import           Data.Semigroup (Last(..))
+import           Data.QuadTree.Internal (Free(..))
 import           Data.Semilattice
 import           Data.Set (Set)
 import qualified Data.Set as S
@@ -55,7 +56,7 @@ subdivide (Cube (V3 x y z) (V3 w h d)) =
 data OctTree a = OctTree
   { qt_default  :: a
   , qt_root_pow :: Integer
-  , qt_tree     :: Tree a
+  , qt_tree     :: Free Oct a
   }
   deriving stock (Show, Functor)
   deriving (Semigroup, Monoid) via (Ap OctTree a)
@@ -88,7 +89,7 @@ mkRegionByPow n =
   let side = 2 ^ n
    in Cube (pure (-side)) $ pure $ side * 2
 
-doubleGo :: a -> Oct (Tree a) -> Tree a
+doubleGo :: a -> Oct (Free Oct a) -> Free Oct a
 doubleGo def (Oct tl0 tr0 bl0 br0 tl1 tr1 bl1 br1) = Split $
   Oct
     (Split (Oct a a a a a a
@@ -125,11 +126,11 @@ powToContainRegion (Cube (V3 x y z) (V3 w h d)) =
     , abs $ z + d
     ]
 
-sel :: (Fractional r, Ord r) => a -> a -> Maybe (Cube r) -> Cube r -> Tree a
+sel :: (Fractional r, Ord r) => a -> a -> Maybe (Cube r) -> Cube r -> Free Oct a
 sel def _ Nothing _ = pure def
 sel def v (Just r) qu = fillImpl def v r qu
 
-fillImpl :: (Fractional r, Ord r) => a -> a -> Cube r -> Cube r -> Tree a
+fillImpl :: (Fractional r, Ord r) => a -> a -> Cube r -> Cube r -> Free Oct a
 fillImpl def v area r
   | containsCube area r = pure v
   | intersects area r = do
@@ -146,7 +147,7 @@ cube def v (normalize -> r)
 fill :: forall a. Cube Rational -> a -> OctTree a -> OctTree a
 fill (normalize -> r) a q = liftA2 fromMaybe q (cube Nothing (Just a) r)
 
-getLocationImpl :: V3 Rational -> Cube Rational -> Tree a -> Maybe a
+getLocationImpl :: V3 Rational -> Cube Rational -> Free Oct a -> Maybe a
 getLocationImpl p r qt
   | containsPoint r p = case qt of
       Fill a -> Just a
@@ -165,7 +166,7 @@ query f (normalize -> area) (OctTree a n q)
     r = mkRegionByPow n
 
 
-queryImpl :: Semilattice s => (a -> s) -> Cube Rational -> Cube Rational -> Tree a -> s
+queryImpl :: Semilattice s => (a -> s) -> Cube Rational -> Cube Rational -> Free Oct a -> s
 queryImpl f area r (Fill a)
   | intersects area r = f a
   | otherwise = mempty
@@ -176,7 +177,7 @@ queryImpl f area r (Split qu)
       fold $ sel2 f <$> subarea <*> subr <*> qu
   | otherwise = mempty
 
-sel2 :: Semilattice s => (a -> s) -> Maybe (Cube Rational) -> Cube Rational -> Tree a -> s
+sel2 :: Semilattice s => (a -> s) -> Maybe (Cube Rational) -> Cube Rational -> Free Oct a -> s
 sel2 _ Nothing _ _ = mempty
 sel2 f (Just area) r q = queryImpl f area r q
 
@@ -188,7 +189,7 @@ sel2 f (Just area) r q = queryImpl f area r q
 volumize :: OctTree a -> [(Cube Rational, a)]
 volumize (OctTree _ n q) = volumizeImpl (mkRegionByPow n) q
 
-volumizeImpl :: Cube Rational -> Tree a -> [(Cube Rational, a)]
+volumizeImpl :: Cube Rational -> Free Oct a -> [(Cube Rational, a)]
 volumizeImpl r (Fill a) = pure (r, a)
 volumizeImpl r (Split qu) = do
   let subr = subdivide r
@@ -200,6 +201,6 @@ elements qt = S.insert (qt_default qt) $ query S.singleton (qt_region qt) qt
 fuse :: Eq a => OctTree a -> OctTree a
 fuse (OctTree a n qt) = OctTree a n $ Raw.fuse qt
 
-overlay :: forall a. OctTree a -> OctTree a -> OctTree a
-overlay qt qt' = coerce @(OctTree (Last a)) $ coerce qt <> coerce qt'
+-- overlay :: forall a. OctTree a -> OctTree a -> OctTree a
+-- overlay qt qt' = coerce @(OctTree (Last a)) $ coerce @_ @(OctTree) qt <> coerce qt'
 

@@ -1,5 +1,4 @@
 {-# LANGUAGE PatternSynonyms #-}
-{-# LANGUAGE StrictData      #-}
 
 module Data.OctTree.Internal where
 
@@ -8,12 +7,14 @@ import Data.Maybe (isJust)
 import Data.Monoid (Ap(..))
 import GHC.Generics (Generic)
 import Linear.V3
+import Linear.V4
+import Data.QuadTree.Internal (Free(..))
 
 
 ------------------------------------------------------------------------------
 -- | An axis-aligned bounding box in 3-space.
 data Cube a = Cube
-  { r_pos :: !(V3 a)
+  { r_pos  :: !(V3 a)
   , r_size :: !(V3 a)
   }
   deriving stock (Show, Read, Eq, Generic, Ord, Functor)
@@ -71,24 +72,14 @@ corners (Cube (V3 x y z) (V3 w h d)) =
    in fmap (p +) $ Oct 0   dx         dy       (dx + dy)
                        dz (dx + dz) (dy + dz) (dx + dy + dz)
 
-data Quad a = Quad a a
-                   a a
-  deriving stock (Eq, Ord, Show, Functor, Foldable, Traversable, Generic)
-  deriving (Semigroup, Monoid) via Ap Quad a
-
-instance Applicative Quad where
-  pure a = Quad a a a a
-  liftA2 fabc (Quad a1 a2 a3 a4) (Quad b1 b2 b3 b4)
-    = Quad (fabc a1 b1) (fabc a2 b2) (fabc a3 b3) (fabc a4 b4)
-
 ------------------------------------------------------------------------------
 -- | An 8-tuple of values.
-data Oct a = Oct' (Quad a) (Quad a)
+data Oct a = Oct' !(V4 a) !(V4 a)
   deriving stock (Eq, Ord, Show, Functor, Foldable, Traversable, Generic)
   deriving (Semigroup, Monoid) via Ap Oct a
 
 pattern Oct :: a -> a -> a -> a -> a -> a -> a -> a -> Oct a
-pattern Oct a b c d e f g h = Oct' (Quad a b c d) (Quad e f g h)
+pattern Oct a b c d e f g h = Oct' (V4 a b c d) (V4 e f g h)
 {-# COMPLETE Oct #-}
 
 instance Applicative Oct where
@@ -96,31 +87,6 @@ instance Applicative Oct where
   liftA2 fabc (Oct' a1 a2) (Oct' b1 b2)
     = Oct' (liftA2 fabc a1 b1) (liftA2 fabc a2 b2)
 
-
-data Tree a
-  = Fill a
-  | Split (Oct (Tree a))
-  deriving (Show, Functor, Foldable, Traversable, Generic)
-
-deriving via Ap Tree a instance Semigroup a => Semigroup (Tree a)
-deriving via Ap Tree a instance Monoid    a => Monoid    (Tree a)
-
-instance Eq a => Eq (Tree a) where
-  Fill a   == Fill b    = a             == b
-  Split qu == Split qu' = qu            == qu'
-  Fill a   == Split qu  = pure (pure a) == qu
-  Split qu == Fill a    = pure (pure a) == qu
-
-instance Applicative Tree where
-  pure = Fill
-  liftA2 fabc (Fill a) (Fill b) = Fill $ fabc a b
-  liftA2 fabc (Fill a) (Split qu) = Split $ fmap (fmap (fabc a)) qu
-  liftA2 fabc (Split qu) (Fill b) = Split $ fmap (fmap (flip  fabc b)) qu
-  liftA2 fabc (Split qu) (Split qu') = Split $ liftA2 (liftA2 fabc) qu qu'
-
-instance Monad Tree where
-  Fill a >>= f = f a
-  Split qu >>= f = Split $ fmap (>>= f) qu
 
 
 normalize :: (Num a, Ord a) => Cube a -> Cube a
@@ -136,7 +102,7 @@ intersects r1 r2 = isJust $ getIntersect r1 r2
 
 
 sizeof :: Num a => Cube a -> a
-sizeof (Cube _ (V3 w h d)) = w * h * d
+sizeof (Cube _ (V3 w h d)) = abs w * abs h * abs d
 
 
 getIntersect :: (Ord a, Num a) => Cube a -> Cube a -> Maybe (Cube a)
@@ -158,17 +124,17 @@ getIntersect (normalize -> r1) (normalize -> r2)
         False -> Nothing
 
 
-unwrap :: Tree a -> Oct (Tree a)
+unwrap :: Free Oct a -> Oct (Free Oct a)
 unwrap (Fill a) = pure $ pure a
 unwrap (Split qu) = qu
 
 
-fuse :: Eq a => Tree a -> Tree a
+fuse :: Eq a => Free Oct a -> Free Oct a
 fuse (Fill a) = Fill a
 fuse (Split q) = doFuse $ fmap fuse q
 
 
-doFuse :: Eq a => Oct (Tree a) -> Tree a
+doFuse :: Eq a => Oct (Free Oct a) -> Free Oct a
 doFuse (Oct (Fill a) (Fill b) (Fill c) (Fill d) (Fill e) (Fill f) (Fill g) (Fill h))
   | a == b
   , b == c

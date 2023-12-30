@@ -26,8 +26,10 @@ source-repository head
 library
   exposed-modules:
       Data.OctTree
-      Data.OctTree.Naive
+      Data.OctTree.Internal
+      Data.QuadTree.Internal
       Data.Semilattice
+      Space.R3
   other-modules:
       Paths_nspace
   autogen-modules:
@@ -58,6 +60,7 @@ library
   build-depends:
       base >=4.7 && <5
     , containers
+    , free
     , hashable
     , linear
     , monoidal-containers
@@ -98,6 +101,7 @@ test-suite nspace-test
     , base >=4.7 && <5
     , checkers
     , containers
+    , free
     , hashable
     , linear
     , monoidal-containers
