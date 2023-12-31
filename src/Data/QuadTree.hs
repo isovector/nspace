@@ -4,19 +4,21 @@
 module Data.QuadTree
   ( QuadTree (..)
 
-    -- * Constructing 'QuadTree's'
+    -- * Constructing 'QuadTree's
   , rect
   , fill
   , combineAla
 
-    -- * Eliminating 'QuadTree's'
+    -- * Querying 'QuadTree's
+  , lookup
+  , query
+  , elements
+
+    -- * Eliminating 'QuadTree's
   , fuse
+  , toRects
   , boundingRect
   , defaultValue
-  , query
-  , lookup
-  , elements
-  , toRects
 
     -- * Constructing 'Rect's
   , Rect (..)
@@ -67,14 +69,22 @@ subdivide (Rect (V2 x y) (V2 w h)) =
 
 
 ------------------------------------------------------------------------------
--- | An infinite precision data structure for storing values in R2.
+-- | A type mapping values at (infinitely precise) locations in 2D
+-- space. That is, you can consider an 'QuadTree' to be a function @'V2'
+-- 'Rational' -> a@, equipped with efficient means of querying the space.
+--
+-- 'QuadTree's should usually be constructed using their 'Monoid'al or
+-- 'Applicative' interfaces, as well as by way of the 'rect' and 'fill'
+-- functions.
 data QuadTree a = QuadTree
   { ot_default  :: a
   , ot_root_pow :: Integer
   , ot_tree     :: Free a
   }
   deriving stock (Show, Functor)
-  deriving (Semigroup, Monoid) via (Ap QuadTree a)
+  deriving (Num, Semigroup, Monoid) via (Ap QuadTree a)
+
+instance Semilattice a => Semilattice (QuadTree a)
 
 
 ------------------------------------------------------------------------------
@@ -141,9 +151,9 @@ realloc (QuadTree a n q) = QuadTree a (n + 1) $ doubleGo a $ unwrap q
 -- | Get the smallest integer which will contain the 'Rect' when given as an
 -- argument to 'mkRectByPow'.
 --
--- @@
+-- @
 -- 'rectContainsRect' ('mkRectByPow' ('rectBoundingLog' c)) c == True
--- @@
+-- @
 rectBoundingLog :: Rect Rational -> Integer
 rectBoundingLog (Rect (V2 x y) (V2 w h)) =
   maximum $ (0 :) $ fmap (ceiling @Double . logBase 2 . fromRational)
@@ -236,9 +246,9 @@ querySel f (Just area) r q = queryImpl f area r q
 -- | Partition the 'QuadTree' into contiguous, singular-valued 'Rect's.
 -- Satsifies the law
 --
--- @@
+-- @
 -- 'foldMap' (uncurry $ 'rect' ('defaultValue' ot)) ('toRects' ot) == ot
--- @@
+-- @
 toRects :: QuadTree a -> [(Rect Rational, a)]
 toRects (QuadTree _ n q) = toRectsImpl (mkRectByPow n) q
 
@@ -268,9 +278,9 @@ fuse (QuadTree a n ot) = QuadTree a n $ Raw.fuse ot
 -- example, in order to replace any values in @qt1@ with those covered by
 -- @qt2@, we can use:
 --
--- @@
+-- @
 -- 'combineAla' 'Data.Semigroup.Last' qt1 qt2
--- @@
+-- @
 combineAla :: forall n a. (Coercible a n, Semigroup n)  => (a -> n) -> QuadTree a -> QuadTree a -> QuadTree a
 combineAla _ x y = coerce $ (coerce x :: QuadTree n) <> coerce y
 

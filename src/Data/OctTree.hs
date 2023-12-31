@@ -4,19 +4,22 @@
 module Data.OctTree
   ( OctTree (..)
 
-    -- * Constructing 'OctTree's'
+    -- * Constructing 'OctTree's
   , cube
   , fill
   , combineAla
 
-    -- * Eliminating 'OctTree's'
+
+    -- * Querying 'OctTree's
+  , lookup
+  , query
+  , elements
+
+    -- * Eliminating 'OctTree's
   , fuse
+  , toCubes
   , boundingCube
   , defaultValue
-  , query
-  , lookup
-  , elements
-  , toCubes
 
     -- * Constructing 'Cube's
   , Cube (..)
@@ -70,13 +73,23 @@ subdivide (Cube (V3 x y z) (V3 w h d)) =
         (Cube (V3 (x + halfw) (y + halfh) (z + halfd)) $ V3 (w - halfw) (h - halfh) (d - halfd))
 
 
+------------------------------------------------------------------------------
+-- | A type mapping values at (infinitely precise) locations in 3D
+-- space. That is, you can consider an 'OctTree' to be a function @'V3'
+-- 'Rational' -> a@, equipped with efficient means of querying the space.
+--
+-- 'OctTree's should usually be constructed using their 'Monoid'al or
+-- 'Applicative' interfaces, as well as by way of the 'cube' and 'fill'
+-- functions.
 data OctTree a = OctTree
   { ot_default  :: a
   , ot_root_pow :: Integer
   , ot_tree     :: Free a
   }
   deriving stock (Show, Functor)
-  deriving (Semigroup, Monoid) via (Ap OctTree a)
+  deriving (Num, Semigroup, Monoid) via (Ap OctTree a)
+
+instance Semilattice a => Semilattice (OctTree a)
 
 
 ------------------------------------------------------------------------------
@@ -149,9 +162,9 @@ realloc (OctTree a n q) = OctTree a (n + 1) $ doubleGo a $ unwrap q
 -- | Get the smallest integer which will contain the 'Cube' when given as an
 -- argument to 'mkCubeByPow'.
 --
--- @@
+-- @
 -- 'cubeContainsCube' ('mkCubeByPow' ('cubeBoundingLog' c)) c == True
--- @@
+-- @
 cubeBoundingLog :: Cube Rational -> Integer
 cubeBoundingLog (Cube (V3 x y z) (V3 w h d)) =
   maximum $ (0 :) $ fmap (ceiling @Double . logBase 2 . fromRational)
@@ -246,9 +259,9 @@ querySel f (Just area) r q = queryImpl f area r q
 -- | Partition the 'OctTree' into contiguous, singular-valued 'Cube's.
 -- Satsifies the law
 --
--- @@
+-- @
 -- 'foldMap' (uncurry $ 'cube' ('defaultValue' ot)) ('toCubes' ot) == ot
--- @@
+-- @
 toCubes :: OctTree a -> [(Cube Rational, a)]
 toCubes (OctTree _ n q) = toCubesImpl (mkCubeByPow n) q
 
@@ -278,9 +291,9 @@ fuse (OctTree a n ot) = OctTree a n $ Raw.fuse ot
 -- example, in order to replace any values in @ot1@ with those covered by
 -- @ot2@, we can use:
 --
--- @@
+-- @
 -- 'combineAla' 'Data.Semigroup.Last' ot1 ot2
--- @@
+-- @
 combineAla :: forall n a. (Coercible a n, Semigroup n)  => (a -> n) -> OctTree a -> OctTree a -> OctTree a
 combineAla _ x y = coerce $ (coerce x :: OctTree n) <> coerce y
 

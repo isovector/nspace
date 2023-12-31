@@ -14,6 +14,23 @@ import           Data.Semigroup hiding (Product)
 import           Data.Set (Set)
 import           GHC.Generics
 
+------------------------------------------------------------------------------
+-- | A 'Semilattice' is a 'Monoid' with the additional property that its
+-- @'(/\)' = '(<>)'@ operation is commutative and idempotent.  That is:
+--
+-- @
+-- a '/\' b = b '/\' a
+-- @
+--
+-- and
+--
+-- @
+-- a '/\' a = a
+-- @
+--
+-- These two properties ensure the internal representations of
+-- 'Data.QuadTree.QuadTree' and 'Data.OctTree.OctTree' can't leak out when
+-- performing spatial queries.
 class Monoid a => Semilattice a where
   (/\) :: a -> a -> a
   (/\) = (<>)
