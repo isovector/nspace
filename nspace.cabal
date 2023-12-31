@@ -30,7 +30,6 @@ library
       Data.QuadTree
       Data.QuadTree.Internal
       Data.Semilattice
-      Space.R3
   other-modules:
       Paths_nspace
   autogen-modules:

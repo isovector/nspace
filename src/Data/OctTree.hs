@@ -9,14 +9,13 @@ module Data.OctTree
   , fill
   , combineAla
 
-
-    -- * Querying 'OctTree's
+    -- * Spatially Querying 'OctTree's
   , lookup
   , query
-  , elements
 
     -- * Eliminating 'OctTree's
   , fuse
+  , elements
   , toCubes
   , boundingCube
   , defaultValue

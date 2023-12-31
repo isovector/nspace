@@ -9,13 +9,13 @@ module Data.QuadTree
   , fill
   , combineAla
 
-    -- * Querying 'QuadTree's
+    -- * Spatially Querying 'QuadTree's
   , lookup
   , query
-  , elements
 
     -- * Eliminating 'QuadTree's
   , fuse
+  , elements
   , toRects
   , boundingRect
   , defaultValue
