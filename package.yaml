@@ -25,7 +25,6 @@ dependencies:
 - linear
 - monoidal-containers
 - hashable
-- free
 
 default-extensions:
 - BangPatterns
