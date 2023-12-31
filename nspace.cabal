@@ -6,7 +6,9 @@ cabal-version: 2.2
 
 name:           nspace
 version:        0.1.0.0
+synopsis:       Efficient, infinite-precision 2D and 3D spatial containers.
 description:    Please see the README on GitHub at <https://github.com/isovector/nspace#readme>
+category:       Data Structures
 homepage:       https://github.com/isovector/nspace#readme
 bug-reports:    https://github.com/isovector/nspace/issues
 author:         Sandy Maguire
