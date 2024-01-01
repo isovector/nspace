@@ -45,10 +45,10 @@ rectContainsRect r1@(Rect (V2 bx by) (V2 bw bh)) r2@(Rect (V2 sx sy) (V2 sw sh))
 ------------------------------------------------------------------------------
 -- | Does the rect contain a given point?
 rectContainsPoint :: (Ord a, Num a) => Rect a -> V2 a -> Bool
-rectContainsPoint (Rect _ (V2 w h)) _
+rectContainsPoint (normalize -> Rect _ (V2 w h)) _
   | w <= 0 || h <= 0
   = False
-rectContainsPoint (Rect (V2 x y) (V2 w h)) (V2 tx ty) =
+rectContainsPoint (normalize -> Rect (V2 x y) (V2 w h)) (V2 tx ty) =
   and
     [ x <= tx
     , y <= ty

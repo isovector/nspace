@@ -47,10 +47,10 @@ cubeContainsCube r1@(Cube (V3 bx by bz) (V3 bw bh bd)) r2@(Cube (V3 sx sy sz) (V
 ------------------------------------------------------------------------------
 -- | Does the cube contain a given point?
 cubeContainsPoint :: (Ord a, Num a) => Cube a -> V3 a -> Bool
-cubeContainsPoint (Cube _ (V3 w h d)) _
+cubeContainsPoint (normalize -> Cube _ (V3 w h d)) _
   | w <= 0 || h <= 0 || d <= 0
   = False
-cubeContainsPoint (Cube (V3 x y z) (V3 w h d)) (V3 tx ty tz) =
+cubeContainsPoint (normalize -> Cube (V3 x y z) (V3 w h d)) (V3 tx ty tz) =
   and
     [ x <= tx
     , y <= ty

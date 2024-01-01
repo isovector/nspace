@@ -5,7 +5,6 @@ module Data.OctTree
   ( OctTree (..)
 
     -- * Constructing 'OctTree's
-  , cube
   , fill
   , combineAla
 
@@ -78,8 +77,7 @@ subdivide (Cube (V3 x y z) (V3 w h d)) =
 -- 'Rational' -> a@, equipped with efficient means of querying the space.
 --
 -- 'OctTree's should usually be constructed using their 'Monoid'al or
--- 'Applicative' interfaces, as well as by way of the 'cube' and 'fill'
--- functions.
+-- 'Applicative' interfaces, as well as by way of the 'fill' function.
 data OctTree a = OctTree
   { ot_default  :: a
   , ot_root_pow :: Integer

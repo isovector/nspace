@@ -66,7 +66,10 @@ tests:
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N
+    build-tools:
+    - hspec-discover >= 2.0
     dependencies:
     - nspace
+    - hspec
     - QuickCheck
     - checkers

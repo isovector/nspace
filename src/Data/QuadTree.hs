@@ -5,7 +5,6 @@ module Data.QuadTree
   ( QuadTree (..)
 
     -- * Constructing 'QuadTree's
-  , rect
   , fill
   , combineAla
 
@@ -74,8 +73,8 @@ subdivide (Rect (V2 x y) (V2 w h)) =
 -- 'Rational' -> a@, equipped with efficient means of querying the space.
 --
 -- 'QuadTree's should usually be constructed using their 'Monoid'al or
--- 'Applicative' interfaces, as well as by way of the 'rect' and 'fill'
--- functions.
+-- 'Applicative' interfaces, as well as by way of the 'fill'
+-- function.
 data QuadTree a = QuadTree
   { ot_default  :: a
   , ot_root_pow :: Integer
@@ -247,7 +246,7 @@ querySel f (Just area) r q = queryImpl f area r q
 -- Satsifies the law
 --
 -- @
--- 'foldMap' (uncurry $ 'rect' ('defaultValue' ot)) ('toRects' ot) == ot
+-- foldr (uncurry 'fill') (pure $ 'defaultValue' ot) ('toRects' ot) == ot
 -- @
 toRects :: QuadTree a -> [(Rect Rational, a)]
 toRects (QuadTree _ n q) = toRectsImpl (mkRectByPow n) q
