@@ -257,7 +257,7 @@ querySel f (Just area) r q = queryImpl f area r q
 -- Satsifies the law
 --
 -- @
--- 'foldMap' (uncurry $ 'cube' ('defaultValue' ot)) ('toCubes' ot) == ot
+-- foldr (uncurry 'fill') (pure $ 'defaultValue' ot) ('toCubes' ot) == ot
 -- @
 toCubes :: OctTree a -> [(Cube Rational, a)]
 toCubes (OctTree _ n q) = toCubesImpl (mkCubeByPow n) q

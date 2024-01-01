@@ -9,6 +9,8 @@ and this project adheres to the
 
 ## Unreleased
 
+- Fixed the documentation of the `toCubes` law
+
 
 ## 0.2.0.0 - 2024-01-01
 
